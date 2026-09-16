@@ -10,6 +10,6 @@
 - [x] Mobile-first layout, works well on phones
 - [x] Nearby fertiliser shops with map
 - [x] Admin console at /admin with farmer list
-- [ ] Fertiliser database: browse/search guide + admin add form
-- [ ] Admin management: manage fertilisers (add, show/hide) from admin console
-- [ ] Professional polish pass across pages (user request)
+- [x] Fertiliser database: browse/search guide + admin add form
+- [x] Admin management: manage fertilisers (add, show/hide) from admin console
+- [x] Fertiliser guide linked from home and shops page; Hindi labels added

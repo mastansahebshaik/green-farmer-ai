@@ -1,6 +1,6 @@
-import { ClientOnly, createFileRoute } from "@tanstack/react-router";
+import { ClientOnly, Link, createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, MapPin, Navigation, Phone, Store } from "lucide-react";
+import { Loader2, MapPin, Navigation, Phone, Sprout, Store } from "lucide-react";
 import { Suspense, lazy, useState } from "react";
 
 const ShopsMap = lazy(() => import("@/components/ShopsMap"));
@@ -75,6 +75,14 @@ function ShopsPage() {
     <AppShell>
       <h1 className="font-display text-3xl font-semibold text-soil">{t("shopsTitle")}</h1>
       <p className="mt-1 text-[15px] font-medium text-soil-500">{t("shopsSubtitle")}</p>
+
+      <Link
+        to="/fertilizers"
+        className="mt-4 flex items-center justify-center gap-1.5 rounded-2xl py-3.5 text-base font-semibold text-leaf-700 ring-1 ring-leaf/30"
+      >
+        <Sprout className="size-5" />
+        {t("fertTitle")}
+      </Link>
 
       <button
         type="button"
