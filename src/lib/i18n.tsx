@@ -93,7 +93,9 @@ const en: Dict = {
   goodFor: "Good for",
   helpsWith: "Helps with",
   price: "Approx price",
-
+  language: "Language",
+  offline: "You are offline. Scans and answers need internet.",
+  backOnline: "Back online",
 };
 
 const hi: Dict = {
@@ -171,6 +173,10 @@ const hi: Dict = {
   locationDenied: "लोकेशन बंद है। कृपया फोन सेटिंग में चालू करें।",
   langSaved: "भाषा सहेजी गई",
   continue: "आगे बढ़ें",
+  language: "भाषा",
+  offline: "इंटरनेट बंद है। स्कैन और जवाब के लिए इंटरनेट चाहिए।",
+  backOnline: "इंटरनेट वापस आ गया",
+
 
 };
 
