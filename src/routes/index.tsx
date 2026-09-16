@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ChevronRight, Leaf, MessageCircle, Mic, Store } from "lucide-react";
+import { Camera, ChevronRight, Leaf, MessageCircle, Mic, Sprout, Store } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -105,6 +105,16 @@ function HomePage() {
         <span className="min-w-0">
           <span className="block font-display text-xl font-semibold text-soil">{t("chatTitle")}</span>
           <span className="block text-sm font-medium text-soil-500">{t("chatSubtitle")}</span>
+        </span>
+      </Link>
+
+      <Link to="/fertilizers" className="mb-3 flex items-center gap-4 rounded-3xl bg-cream-2 p-5 ring-1 ring-black/5">
+        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-sun/30">
+          <Sprout className="size-7 text-sun-700" />
+        </span>
+        <span className="min-w-0">
+          <span className="block font-display text-xl font-semibold text-soil">{t("fertTitle")}</span>
+          <span className="block text-sm font-medium text-soil-500">{t("fertSubtitle")}</span>
         </span>
       </Link>
 
