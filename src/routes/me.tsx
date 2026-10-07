@@ -34,7 +34,7 @@ function MePage() {
   const [village, setVillage] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { data: profile } = useQuery({
+  const { data: profile, error: profileError } = useQuery({
     queryKey: ["profile", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
@@ -48,7 +48,7 @@ function MePage() {
     },
   });
 
-  const { data: scans } = useQuery({
+  const { data: scans, error: scansError } = useQuery({
     queryKey: ["scans", user?.id, "all"],
     enabled: Boolean(user),
     queryFn: async () => {
@@ -149,6 +149,12 @@ function MePage() {
           {t("saveProfile")}
         </button>
       </section>
+
+      {profileError || scansError ? (
+        <p className="mt-5 rounded-2xl bg-cream-2 p-4 text-[15px] font-medium text-clay ring-1 ring-clay/20">
+          Some account data could not be loaded. Please try again.
+        </p>
+      ) : null}
 
       <section className="mt-7">
         <h2 className="mb-3 font-display text-2xl font-semibold text-soil">{t("pastScans")}</h2>
