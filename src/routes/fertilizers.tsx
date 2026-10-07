@@ -58,7 +58,7 @@ function FertilizersPage() {
     queryFn: () => isAdminFn(),
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["fertilizers"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -110,7 +110,11 @@ function FertilizersPage() {
 
       {adminData?.isAdmin && showForm ? <div className="mt-3"><FertilizerForm onDone={() => setShowForm(false)} submitLabel={t("addFert")} /></div> : null}
 
-      {isLoading ? (
+      {error ? (
+        <p className="mt-5 rounded-2xl bg-cream-2 p-4 text-[15px] font-medium text-clay ring-1 ring-clay/20">
+          Could not load the fertiliser database. Please try again.
+        </p>
+      ) : isLoading ? (
         <div className="grid place-items-center py-16">
           <Loader2 className="size-6 animate-spin text-leaf-700" />
         </div>
