@@ -43,6 +43,13 @@
       "when": 1791331202000,
       "tag": "0005_harden_role_function",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791331203000,
+      "tag": "0006_request_rate_limits",
+      "breakpoints": true
     }
   ]
 }
