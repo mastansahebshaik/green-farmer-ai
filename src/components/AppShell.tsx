@@ -55,9 +55,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   ] as const;
 
   async function changeLanguage(code: LangCode) {
+    const previous = lang;
     setLang(code);
-    if (user) {
-      await supabase.from("profiles").update({ language: code }).eq("id", user.id);
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ language: code }).eq("id", user.id);
+    if (error) {
+      setLang(previous);
     }
   }
 
