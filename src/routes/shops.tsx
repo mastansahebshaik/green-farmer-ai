@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { findNearbyShops, type NearbyShop } from "@/lib/places.functions";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/shops")({
   head: () => ({
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/shops")({
 
 function ShopsPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const find = useServerFn(findNearbyShops);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -38,6 +40,10 @@ function ShopsPage() {
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const locate = () => {
+    if (!user) {
+      toast.error(t("loginNeeded"));
+      return;
+    }
     if (!navigator.geolocation) {
       toast.error(t("locationDenied"));
       return;
@@ -83,6 +89,12 @@ function ShopsPage() {
         <Sprout className="size-5" />
         {t("fertTitle")}
       </Link>
+
+      {!user ? (
+        <Link to="/auth" className="mt-5 flex w-full items-center justify-center rounded-2xl bg-cream-2 py-4 text-base font-semibold text-soil ring-1 ring-black/10">
+          {t("loginNeeded")}
+        </Link>
+      ) : null}
 
       <button
         type="button"
