@@ -36,8 +36,15 @@ export function FertilizerForm({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) {
+      setBusy(false);
+      toast.error("Please sign in again.");
+      return;
+    }
     const { error } = await supabase.from("fertilizers").insert({
       name: form.name.trim(),
+      created_by: authData.user.id,
       kind: form.kind,
       nutrients: form.nutrients.trim() || null,
       crops: form.crops.split(",").map((s) => s.trim()).filter(Boolean),
