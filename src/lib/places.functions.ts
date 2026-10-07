@@ -8,17 +8,17 @@ const NearbyInput = z.object({
   radiusKm: z.number().finite().min(1).max(50).default(15),
 });
 const SHOP_TIMEOUT_MS = 20_000;
-const shopRateBuckets = new Map<string, { startedAt: number; count: number }>();
 
-function assertShopRateLimit(userId: string) {
-  const now = Date.now();
-  const current = shopRateBuckets.get(userId);
-  if (!current || now - current.startedAt >= 60_000) {
-    shopRateBuckets.set(userId, { startedAt: now, count: 1 });
-    return;
-  }
-  if (current.count >= 12) throw new Error("Too many shop searches. Please wait a minute and try again.");
-  current.count += 1;
+type RateLimitClient = import("@supabase/supabase-js").SupabaseClient<import("@/integrations/supabase/types").Database>;
+
+async function enforceShopRateLimit(supabase: RateLimitClient) {
+  const { data, error } = await supabase.rpc("consume_rate_limit", {
+    _bucket: "shops",
+    _limit: 12,
+    _window_seconds: 60,
+  });
+  if (error) throw new Error("Shop search is temporarily unavailable. Please try again.");
+  if (!data) throw new Error("Too many shop searches. Please wait a minute and try again.");
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit) {
@@ -71,7 +71,7 @@ export const findNearbyShops = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => NearbyInput.parse(input))
   .handler(async ({ data, context }): Promise<{ shops: NearbyShop[] }> => {
-    assertShopRateLimit(context.userId);
+    await enforceShopRateLimit(context.supabase);
     const radius = Math.round(data.radiusKm * 1000);
     const around = `(around:${radius},${data.lat},${data.lon})`;
     const query = `
