@@ -1,6 +1,10 @@
 /** Browser helpers for camera photos and voice recording. */
 
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
 export async function fileToDownscaledDataUrl(file: File, max = 1024): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+  if (file.size > MAX_IMAGE_BYTES) throw new Error("That image is too large. Please choose a photo under 10 MB.");
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale);
