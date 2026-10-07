@@ -41,6 +41,10 @@ function ScanPage() {
 
   const handleFile = async (file?: File | null) => {
     if (!file) return;
+    if (!user) {
+      toast.error(t("loginNeeded"));
+      return;
+    }
     setBusy(true);
     setResult(null);
     try {
