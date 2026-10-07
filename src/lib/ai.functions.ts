@@ -19,6 +19,10 @@ const MAX_AUDIO_BASE64_LENGTH = 8_000_000;
 const MAX_CHAT_MESSAGE_LENGTH = 2_000;
 const AI_TIMEOUT_MS = 30_000;
 const LanguageSchema = z.enum(["en", "hi", "mr", "bn", "te", "ta", "kn"]);
+
+function stripJsonFence(content: string) {
+  return content.replace(/^\`\`\`(?:json)?\\s*/i, "").replace(/\`\`\`\\s*$/, "").trim();
+}
 const rateBuckets = new Map<string, { startedAt: number; count: number }>();
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT = 20;
@@ -123,7 +127,7 @@ export const analyzePlant = createServerFn({ method: "POST" })
     });
 
     try {
-      const parsed = JSON.parse(content.replace(/^\`\`\`(?:json)?|\`\`\`$/g, "").trim()) as unknown;
+      const parsed = JSON.parse(stripJsonFence(content)) as unknown;
       const checked = DiseaseResultSchema.safeParse(parsed);
       if (checked.success) return checked.data;
     } catch {
@@ -216,7 +220,7 @@ export const getYieldTips = createServerFn({ method: "POST" })
       response_format: { type: "json_object" },
     });
     try {
-      const parsed = JSON.parse(content.replace(/^```(?:json)?|```$/g, "").trim()) as {
+      const parsed = JSON.parse(stripJsonFence(content)) as {
         tips?: { title: string; detail: string }[];
       };
       return { tips: parsed.tips ?? [] };
