@@ -22,6 +22,20 @@
       "when": 1789451743814,
       "tag": "0002_create_fertilizers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791331200000,
+      "tag": "0003_harden_data_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791331201000,
+      "tag": "0004_admin_farmer_stats",
+      "breakpoints": true
     }
   ]
 }
