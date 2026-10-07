@@ -56,7 +56,11 @@ function AuthPage() {
         if (error) throw error;
         // One language choice per login: store it on the farmer's profile.
         if (data.user) {
-          await supabase.from("profiles").update({ language: lang }).eq("id", data.user.id);
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ language: lang })
+            .eq("id", data.user.id);
+          if (profileError) console.error("Could not save language preference:", profileError);
         }
       }
     } catch (error) {
