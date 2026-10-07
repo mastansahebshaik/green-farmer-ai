@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 
@@ -13,6 +14,31 @@ const LANGUAGE_NAMES: Record<string, string> = {
   kn: "Kannada",
 };
 
+const MAX_IMAGE_DATA_URL_LENGTH = 4_500_000;
+const MAX_AUDIO_BASE64_LENGTH = 8_000_000;
+const MAX_CHAT_MESSAGE_LENGTH = 2_000;
+const AI_TIMEOUT_MS = 30_000;
+const LanguageSchema = z.enum(["en", "hi", "mr", "bn", "te", "ta", "kn"]);
+const rateBuckets = new Map<string, { startedAt: number; count: number }>();
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT = 20;
+
+function assertAiRateLimit(userId: string) {
+  const now = Date.now();
+  const current = rateBuckets.get(userId);
+  if (!current || now - current.startedAt >= RATE_WINDOW_MS) { rateBuckets.set(userId, { startedAt: now, count: 1 }); return; }
+  if (current.count >= RATE_LIMIT) throw new Error("Too many AI requests. Please wait a minute and try again.");
+  current.count += 1;
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try { return await fetch(url, { ...init, signal: controller.signal }); }
+  catch (error) { if (error instanceof Error && error.name === "AbortError") throw new Error("The AI service took too long to respond. Please try again."); throw error; }
+  finally { clearTimeout(timer); }
+}
+
 function apiKey() {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured for this app.");
@@ -20,7 +46,7 @@ function apiKey() {
 }
 
 async function chat(body: Record<string, unknown>) {
-  const res = await fetch(`${GATEWAY}/chat/completions`, {
+  const res = await fetchWithTimeout(`${GATEWAY}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -41,8 +67,8 @@ async function chat(body: Record<string, unknown>) {
 }
 
 const AnalyzeInput = z.object({
-  imageDataUrl: z.string().min(20),
-  language: z.string().min(2).max(5),
+  imageDataUrl: z.string().min(100).max(MAX_IMAGE_DATA_URL_LENGTH).regex(/^data:image\/(?:jpeg|png|webp);base64,/i, "Only JPEG, PNG, or WebP images are accepted."),
+  language: LanguageSchema,
 });
 
 export type DiseaseResult = {
@@ -57,8 +83,10 @@ export type DiseaseResult = {
 };
 
 export const analyzePlant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => AnalyzeInput.parse(input))
-  .handler(async ({ data }): Promise<DiseaseResult> => {
+  .handler(async ({ data, context }): Promise<DiseaseResult> => {
+    assertAiRateLimit(context.userId);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
     const content = await chat({
       model: "google/gemini-3.8-flash",
@@ -107,12 +135,14 @@ const AskInput = z.object({
   messages: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1) }))
     .min(1)
-    .max(40),
+    .max(20),
 });
 
 export const askAssistant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => AskInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    assertAiRateLimit(context.userId);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
     const answer = await chat({
       model: "google/gemini-3.8-flash",
@@ -139,6 +169,7 @@ const YieldInput = z.object({
 });
 
 export const getYieldTips = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => YieldInput.parse(input))
   .handler(async ({ data }) => {
     const language = LANGUAGE_NAMES[data.language] ?? "English";
@@ -171,11 +202,12 @@ export const getYieldTips = createServerFn({ method: "POST" })
   });
 
 const SpeakInput = z.object({
-  text: z.string().min(1).max(2000),
+  text: z.string().trim().min(1).max(2000),
   language: z.string().min(2).max(5),
 });
 
 export const speakText = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SpeakInput.parse(input))
   .handler(async ({ data }) => {
     const language = LANGUAGE_NAMES[data.language] ?? "English";
@@ -202,11 +234,12 @@ export const speakText = createServerFn({ method: "POST" })
   });
 
 const TranscribeInput = z.object({
-  audioBase64: z.string().min(100),
+  audioBase64: z.string().min(100).max(MAX_AUDIO_BASE64_LENGTH).regex(/^[A-Za-z0-9+/]+={0,2}$/, "Invalid base64 audio data."),
   language: z.string().min(2).max(5),
 });
 
 export const transcribeAudio = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => TranscribeInput.parse(input))
   .handler(async ({ data }) => {
     const bytes = Buffer.from(data.audioBase64, "base64");
