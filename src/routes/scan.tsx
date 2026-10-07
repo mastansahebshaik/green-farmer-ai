@@ -73,7 +73,11 @@ function ScanPage() {
           steps: res.steps,
           language: lang,
         });
-        if (!error) toast.success(t("saved"));
+        if (error) {
+          toast.error("The scan was analysed but could not be saved. Please try again.");
+        } else {
+          toast.success(t("saved"));
+        }
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Scan failed");
