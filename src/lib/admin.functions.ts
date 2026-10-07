@@ -39,36 +39,21 @@ export const listFarmers = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<{ farmers: AdminFarmer[]; totalScans: number }> => {
     await assertAdmin(context.supabase, context.userId);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await context.supabase.rpc("get_admin_farmer_stats");
+    if (error) throw new Error("Could not load admin statistics.");
 
-    const [{ data: users }, { data: profiles }, { data: scans }] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-      supabaseAdmin.from("profiles").select("id, full_name, village, language, created_at"),
-      supabaseAdmin.from("scans").select("user_id"),
-    ]);
+    const rows = data ?? [];
+    const farmers: AdminFarmer[] = rows.map((row) => ({
+      id: row.id,
+      email: row.email ?? null,
+      fullName: row.full_name ?? null,
+      village: row.village ?? null,
+      language: row.language ?? "en",
+      createdAt: row.created_at ?? null,
+      lastSignInAt: row.last_sign_in_at ?? null,
+      scanCount: Number(row.scan_count ?? 0),
+    }));
 
-    const scanCounts = new Map<string, number>();
-    for (const s of scans ?? []) {
-      scanCounts.set(s.user_id, (scanCounts.get(s.user_id) ?? 0) + 1);
-    }
-    const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
-
-    const farmers: AdminFarmer[] = (users?.users ?? []).map((u) => {
-      const p = profileById.get(u.id);
-      return {
-        id: u.id,
-        email: u.email ?? null,
-        fullName:
-          p?.full_name ?? ((u.user_metadata?.["full_name"] as string | undefined) ?? null),
-        village: p?.village ?? null,
-        language: p?.language ?? "en",
-        createdAt: u.created_at ?? p?.created_at ?? null,
-        lastSignInAt: u.last_sign_in_at ?? null,
-        scanCount: scanCounts.get(u.id) ?? 0,
-      };
-    });
-
-    farmers.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
-
-    return { farmers, totalScans: scans?.length ?? 0 };
+    const totalScans = farmers.reduce((sum, farmer) => sum + farmer.scanCount, 0);
+    return { farmers, totalScans };
   });
