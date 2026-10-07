@@ -38,4 +38,10 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  {
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "prettier/prettier": "warn",
+    },
+  },
 );
