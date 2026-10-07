@@ -178,7 +178,7 @@ export const askAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => AskInput.parse(input))
   .handler(async ({ data, context }) => {
-    assertAiRateLimit(context.userId);
+    await enforceAiRateLimit(context.supabase);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
     const answer = await chat({
       model: "google/gemini-3.8-flash",
@@ -215,7 +215,7 @@ export const getYieldTips = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => YieldInput.parse(input))
   .handler(async ({ data, context }) => {
-    assertAiRateLimit(context.userId);
+    await enforceAiRateLimit(context.supabase);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
     const content = await chat({
       model: "google/gemini-3.8-flash",
@@ -254,7 +254,7 @@ export const speakText = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SpeakInput.parse(input))
   .handler(async ({ data, context }) => {
-    assertAiRateLimit(context.userId);
+    await enforceAiRateLimit(context.supabase);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
     const res = await fetchWithTimeout(`${GATEWAY}/audio/speech`, {
       method: "POST",
@@ -288,7 +288,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => TranscribeInput.parse(input))
   .handler(async ({ data, context }) => {
-    assertAiRateLimit(context.userId);
+    await enforceAiRateLimit(context.supabase);
     const bytes = Buffer.from(data.audioBase64, "base64");
     const form = new FormData();
     form.append("model", "google/gemini-3.5-transcribe");
