@@ -60,7 +60,7 @@ async function chat(body: Record<string, unknown>) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    console.error("[AI] chat request failed", res.status, text.slice(0, 1000));
+    console.error("[AI] chat request failed", res.status);
     if (res.status === 429) throw new Error("Too many requests right now. Please try again in a minute.");
     if (res.status === 402) throw new Error("The AI credits for this app have run out.");
     throw new Error("AI request failed. Please try again.");
@@ -269,7 +269,7 @@ export const speakText = createServerFn({ method: "POST" })
     });
     if (!res.ok) {
       const upstream = await res.text().catch(() => "");
-      console.error("[AI] speech request failed", res.status, upstream.slice(0, 1000));
+      console.error("[AI] speech request failed", res.status);
       throw new Error("Voice generation failed. Please try again.");
     }
     const buffer = await res.arrayBuffer();
@@ -299,7 +299,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
     });
     if (!res.ok) {
       const upstream = await res.text().catch(() => "");
-      console.error("[AI] transcription request failed", res.status, upstream.slice(0, 1000));
+      console.error("[AI] transcription request failed", res.status);
       throw new Error("Could not understand the recording. Please try again.");
     }
     const json = (await res.json()) as { text?: string };
