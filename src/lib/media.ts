@@ -1,11 +1,17 @@
 /** Browser helpers for camera photos and voice recording. */
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_PIXELS = 20_000_000;
+const MAX_RECORDED_SECONDS = 60;
 
 export async function fileToDownscaledDataUrl(file: File, max = 1024): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
   if (file.size > MAX_IMAGE_BYTES) throw new Error("That image is too large. Please choose a photo under 10 MB.");
   const bitmap = await createImageBitmap(file);
+  if (bitmap.width * bitmap.height > MAX_IMAGE_PIXELS) {
+    bitmap.close();
+    throw new Error("That image has too many pixels. Please choose a smaller photo.");
+  }
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale);
   const height = Math.round(bitmap.height * scale);
@@ -68,7 +74,16 @@ export async function startRecording(): Promise<Recorder> {
   const source = ctx.createMediaStreamSource(stream);
   const node = ctx.createScriptProcessor(4096, 1, 1);
   const chunks: Float32Array[] = [];
-  node.onaudioprocess = (e) => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  const maxSamples = Math.floor(MAX_RECORDED_SECONDS * ctx.sampleRate);
+  let capturedSamples = 0;
+  node.onaudioprocess = (e) => {
+    if (capturedSamples >= maxSamples) return;
+    const input = e.inputBuffer.getChannelData(0);
+    const remaining = maxSamples - capturedSamples;
+    const chunk = new Float32Array(input.slice(0, remaining));
+    chunks.push(chunk);
+    capturedSamples += chunk.length;
+  };
   source.connect(node);
   const silentSink = ctx.createGain();
   silentSink.gain.value = 0;
