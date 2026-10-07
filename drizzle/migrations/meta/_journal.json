@@ -36,6 +36,13 @@
       "when": 1791331201000,
       "tag": "0004_admin_farmer_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791331202000,
+      "tag": "0005_harden_role_function",
+      "breakpoints": true
     }
   ]
 }
