@@ -21,9 +21,12 @@ const AI_TIMEOUT_MS = 30_000;
 const LanguageSchema = z.enum(["en", "hi", "mr", "bn", "te", "ta", "kn"]);
 
 function stripJsonFence(content: string) {
-  return content.replace(/^```(?:json)?\\s*/i, "").replace(/```\\s*$/, "").trim();
-}
-type RateLimitClient = import("@supabase/supabase-js").SupabaseClient<import("@/integrations/supabase/types").Database>;
+  let value = content.trim();
+  if (value.startsWith(String.fromCharCode(96, 96, 96) + "json")) value = value.slice(7);
+  else if (value.startsWith(String.fromCharCode(96, 96, 96))) value = value.slice(3);
+  if (value.endsWith(String.fromCharCode(96, 96, 96))) value = value.slice(0, -3);
+  return value.trim();
+}type RateLimitClient = import("@supabase/supabase-js").SupabaseClient<import("@/integrations/supabase/types").Database>;
 
 async function enforceAiRateLimit(supabase: RateLimitClient) {
   const { data, error } = await supabase.rpc("consume_rate_limit", {
@@ -59,7 +62,7 @@ async function chat(body: Record<string, unknown>) {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
+    await res.text().catch(() => "");
     console.error("[AI] chat request failed", res.status);
     if (res.status === 429) throw new Error("Too many requests right now. Please try again in a minute.");
     if (res.status === 402) throw new Error("The AI credits for this app have run out.");
