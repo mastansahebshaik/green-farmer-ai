@@ -56,9 +56,10 @@ async function chat(body: Record<string, unknown>) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    console.error("[AI] chat request failed", res.status, text.slice(0, 1000));
     if (res.status === 429) throw new Error("Too many requests right now. Please try again in a minute.");
     if (res.status === 402) throw new Error("The AI credits for this app have run out.");
-    throw new Error(`AI request failed [${res.status}]: ${text}`);
+    throw new Error("AI request failed. Please try again.");
   }
   const json = (await res.json()) as {
     choices?: { message?: { content?: string } }[];
@@ -130,7 +131,7 @@ export const analyzePlant = createServerFn({ method: "POST" })
   });
 
 const AskInput = z.object({
-  language: z.string().min(2).max(5),
+  language: LanguageSchema,
   context: z.string().max(1200).optional(),
   messages: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1) }))
@@ -164,14 +165,15 @@ export const askAssistant = createServerFn({ method: "POST" })
   });
 
 const YieldInput = z.object({
-  language: z.string().min(2).max(5),
+  language: LanguageSchema,
   crop: z.string().max(60).optional(),
 });
 
 export const getYieldTips = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => YieldInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    assertAiRateLimit(context.userId);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
     const content = await chat({
       model: "google/gemini-3.8-flash",
@@ -203,15 +205,16 @@ export const getYieldTips = createServerFn({ method: "POST" })
 
 const SpeakInput = z.object({
   text: z.string().trim().min(1).max(2000),
-  language: z.string().min(2).max(5),
+  language: LanguageSchema,
 });
 
 export const speakText = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SpeakInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    assertAiRateLimit(context.userId);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
-    const res = await fetch(`${GATEWAY}/audio/speech`, {
+    const res = await fetchWithTimeout(`${GATEWAY}/audio/speech`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -235,20 +238,21 @@ export const speakText = createServerFn({ method: "POST" })
 
 const TranscribeInput = z.object({
   audioBase64: z.string().min(100).max(MAX_AUDIO_BASE64_LENGTH).regex(/^[A-Za-z0-9+/]+={0,2}$/, "Invalid base64 audio data."),
-  language: z.string().min(2).max(5),
+  language: LanguageSchema,
 });
 
 export const transcribeAudio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => TranscribeInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    assertAiRateLimit(context.userId);
     const bytes = Buffer.from(data.audioBase64, "base64");
     const form = new FormData();
     form.append("model", "google/gemini-3.5-transcribe");
     form.append("file", new Blob([new Uint8Array(bytes)], { type: "audio/wav" }), "recording.wav");
     form.append("language", data.language);
 
-    const res = await fetch(`${GATEWAY}/audio/transcriptions`, {
+    const res = await fetchWithTimeout(`${GATEWAY}/audio/transcriptions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey()}` },
       body: form,
