@@ -154,6 +154,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_farmer_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string | null
+          full_name: string | null
+          village: string | null
+          language: string
+          created_at: string | null
+          last_sign_in_at: string | null
+          scan_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
