@@ -154,6 +154,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_rate_limit: {
+        Args: {
+          _bucket: string
+          _limit: number
+          _window_seconds: number
+        }
+        Returns: boolean
+      }
       get_admin_farmer_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
