@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { getYieldTips, speakText } from "@/lib/ai.functions";
 import { playBase64Mp3 } from "@/lib/media";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/tips")({
   head: () => ({
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/tips")({
 
 function TipsPage() {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
   const fetchTips = useServerFn(getYieldTips);
   const speak = useServerFn(speakText);
   const [crop, setCrop] = useState("");
@@ -32,6 +34,7 @@ function TipsPage() {
   const [tips, setTips] = useState<{ title: string; detail: string }[]>([]);
 
   const load = async () => {
+    if (!user) { toast.error(t("loginNeeded")); return; }
     setBusy(true);
     try {
       const res = await fetchTips({ data: { language: lang, crop: crop || undefined } });
@@ -45,6 +48,7 @@ function TipsPage() {
   };
 
   const readAloud = async () => {
+    if (!user) { toast.error(t("loginNeeded")); return; }
     try {
       const text = tips.map((tip) => `${tip.title}. ${tip.detail}`).join(". ");
       const { audioBase64 } = await speak({ data: { text, language: lang } });
