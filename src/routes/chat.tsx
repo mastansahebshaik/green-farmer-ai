@@ -60,6 +60,7 @@ function ChatPage() {
   }, [messages, thinking]);
 
   const send = async (question: string) => {
+    if (!user) { toast.error(t("loginNeeded")); return; }
     const q = question.trim();
     if (!q || thinking) return;
     setText("");
