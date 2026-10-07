@@ -10,6 +10,13 @@ type Props = {
 };
 
 /** Browser-only map showing the farmer's position and every nearby farm-supply shop. */
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => {
+    const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    return entities[char] ?? char;
+  });
+}
+
 export default function ShopsMap({ center, shops, focusId }: Props) {
   const holder = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
@@ -58,11 +65,14 @@ export default function ShopsMap({ center, shops, focusId }: Props) {
     const bounds = L.latLngBounds([[center.lat, center.lon]]);
     shops.forEach((shop) => {
       const marker = L.marker([shop.lat, shop.lon], { icon: shopIcon }).addTo(instance);
-      const phone = shop.phone
-        ? `<a href="tel:${shop.phone}" style="color:#2f6f3e;font-weight:600">${shop.phone}</a><br/>`
+      const safeName = escapeHtml(shop.name);
+      const safeAddress = escapeHtml(shop.address);
+      const safePhone = escapeHtml(shop.phone);
+      const phone = safePhone
+        ? `<a href="tel:${safePhone}" style="color:#2f6f3e;font-weight:600">${safePhone}</a><br/>`
         : "";
       marker.bindPopup(
-        `<strong>${shop.name}</strong><br/>${shop.distanceKm} km${shop.address ? ` · ${shop.address}` : ""}<br/>${phone}<a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lon}" target="_blank" rel="noreferrer" style="color:#2f6f3e;font-weight:600">Directions</a>`,
+        `<strong>${safeName}</strong><br/>${shop.distanceKm} km${safeAddress ? ` · ${safeAddress}` : ""}<br/>${phone}<a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lon}" target="_blank" rel="noreferrer" style="color:#2f6f3e;font-weight:600">Directions</a>`,
       );
       markers.current[shop.id] = marker;
       bounds.extend([shop.lat, shop.lon]);
