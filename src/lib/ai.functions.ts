@@ -23,16 +23,16 @@ const LanguageSchema = z.enum(["en", "hi", "mr", "bn", "te", "ta", "kn"]);
 function stripJsonFence(content: string) {
   return content.replace(/^```(?:json)?\\s*/i, "").replace(/```\\s*$/, "").trim();
 }
-const rateBuckets = new Map<string, { startedAt: number; count: number }>();
-const RATE_WINDOW_MS = 60_000;
-const RATE_LIMIT = 20;
+type RateLimitClient = import("@supabase/supabase-js").SupabaseClient<import("@/integrations/supabase/types").Database>;
 
-function assertAiRateLimit(userId: string) {
-  const now = Date.now();
-  const current = rateBuckets.get(userId);
-  if (!current || now - current.startedAt >= RATE_WINDOW_MS) { rateBuckets.set(userId, { startedAt: now, count: 1 }); return; }
-  if (current.count >= RATE_LIMIT) throw new Error("Too many AI requests. Please wait a minute and try again.");
-  current.count += 1;
+async function enforceAiRateLimit(supabase: RateLimitClient) {
+  const { data, error } = await supabase.rpc("consume_rate_limit", {
+    _bucket: "ai",
+    _limit: 20,
+    _window_seconds: 60,
+  });
+  if (error) throw new Error("AI service is temporarily unavailable. Please try again.");
+  if (!data) throw new Error("Too many AI requests. Please wait a minute and try again.");
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit) {
@@ -102,7 +102,7 @@ export const analyzePlant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => AnalyzeInput.parse(input))
   .handler(async ({ data, context }): Promise<DiseaseResult> => {
-    assertAiRateLimit(context.userId);
+    await enforceAiRateLimit(context.supabase);
     const language = LANGUAGE_NAMES[data.language] ?? "English";
     const content = await chat({
       model: "google/gemini-3.8-flash",
