@@ -83,6 +83,17 @@ export type DiseaseResult = {
   prevention: string[];
 };
 
+const DiseaseResultSchema = z.object({
+  crop: z.string().max(100).default(""),
+  disease: z.string().min(1).max(200),
+  healthy: z.boolean(),
+  severityLabel: z.string().min(1).max(50),
+  severityScore: z.coerce.number().finite().min(0).max(100),
+  summary: z.string().max(1000).default(""),
+  steps: z.array(z.string().min(1).max(400)).max(6).default([]),
+  prevention: z.array(z.string().min(1).max(400)).max(6).default([]),
+});
+
 export const analyzePlant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => AnalyzeInput.parse(input))
@@ -111,22 +122,23 @@ export const analyzePlant = createServerFn({ method: "POST" })
       response_format: { type: "json_object" },
     });
 
-    let parsed: Partial<DiseaseResult> = {};
     try {
-      parsed = JSON.parse(content.replace(/^```(?:json)?|```$/g, "").trim());
+      const parsed = JSON.parse(content.replace(/^\`\`\`(?:json)?|\`\`\`$/g, "").trim()) as unknown;
+      const checked = DiseaseResultSchema.safeParse(parsed);
+      if (checked.success) return checked.data;
     } catch {
-      parsed = { disease: content.slice(0, 200) };
+      // Fall through to a safe fallback response.
     }
 
     return {
-      crop: parsed.crop ?? "",
-      disease: parsed.disease ?? "Unknown",
-      healthy: Boolean(parsed.healthy),
-      severityLabel: parsed.severityLabel ?? "low",
-      severityScore: Number(parsed.severityScore ?? 0),
-      summary: parsed.summary ?? "",
-      steps: Array.isArray(parsed.steps) ? parsed.steps.map(String) : [],
-      prevention: Array.isArray(parsed.prevention) ? parsed.prevention.map(String) : [],
+      crop: "",
+      disease: "Unknown",
+      healthy: false,
+      severityLabel: "unknown",
+      severityScore: 0,
+      summary: "The AI response could not be read safely. Please try another clear plant photo.",
+      steps: [],
+      prevention: [],
     };
   });
 
@@ -134,7 +146,10 @@ const AskInput = z.object({
   language: LanguageSchema,
   context: z.string().max(1200).optional(),
   messages: z
-    .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1) }))
+    .array(z.object({
+      role: z.enum(["user", "assistant"]),
+      content: z.string().trim().min(1).max(MAX_CHAT_MESSAGE_LENGTH),
+    }))
     .min(1)
     .max(20),
 });
@@ -166,7 +181,14 @@ export const askAssistant = createServerFn({ method: "POST" })
 
 const YieldInput = z.object({
   language: LanguageSchema,
-  crop: z.string().max(60).optional(),
+  crop: z.string().trim().max(60).optional(),
+});
+
+const YieldTipsSchema = z.object({
+  tips: z.array(z.object({
+    title: z.string().min(1).max(80),
+    detail: z.string().min(1).max(300),
+  })).max(6),
 });
 
 export const getYieldTips = createServerFn({ method: "POST" })
@@ -229,8 +251,9 @@ export const speakText = createServerFn({ method: "POST" })
       }),
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Voice failed [${res.status}]: ${text}`);
+      const upstream = await res.text().catch(() => "");
+      console.error("[AI] speech request failed", res.status, upstream.slice(0, 1000));
+      throw new Error("Voice generation failed. Please try again.");
     }
     const buffer = await res.arrayBuffer();
     return { audioBase64: Buffer.from(buffer).toString("base64") };
@@ -258,8 +281,9 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       body: form,
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Could not understand the recording [${res.status}]: ${text}`);
+      const upstream = await res.text().catch(() => "");
+      console.error("[AI] transcription request failed", res.status, upstream.slice(0, 1000));
+      throw new Error("Could not understand the recording. Please try again.");
     }
     const json = (await res.json()) as { text?: string };
     return { text: json.text ?? "" };
