@@ -98,7 +98,18 @@ export const findNearbyShops = createServerFn({ method: "POST" })
       .map((el) => {
         const lat = el.lat ?? el.center?.lat;
         const lon = el.lon ?? el.center?.lon;
-        if (lat === undefined || lon === undefined) return null;
+        if (
+          lat === undefined ||
+          lon === undefined ||
+          !Number.isFinite(lat) ||
+          !Number.isFinite(lon) ||
+          lat < -90 ||
+          lat > 90 ||
+          lon < -180 ||
+          lon > 180
+        ) {
+          return null;
+        }
         const tags = el.tags ?? {};
         const name = tags["name"] ?? tags["operator"] ?? "Farm supply shop";
         const address = [tags["addr:street"], tags["addr:village"], tags["addr:city"]]
