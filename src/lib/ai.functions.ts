@@ -21,7 +21,7 @@ const AI_TIMEOUT_MS = 30_000;
 const LanguageSchema = z.enum(["en", "hi", "mr", "bn", "te", "ta", "kn"]);
 
 function stripJsonFence(content: string) {
-  return content.replace(/^\`\`\`(?:json)?\\s*/i, "").replace(/\`\`\`\\s*$/, "").trim();
+  return content.replace(/^```(?:json)?\\s*/i, "").replace(/```\\s*$/, "").trim();
 }
 const rateBuckets = new Map<string, { startedAt: number; count: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -146,17 +146,30 @@ export const analyzePlant = createServerFn({ method: "POST" })
     };
   });
 
-const AskInput = z.object({
-  language: LanguageSchema,
-  context: z.string().max(1200).optional(),
-  messages: z
-    .array(z.object({
-      role: z.enum(["user", "assistant"]),
-      content: z.string().trim().min(1).max(MAX_CHAT_MESSAGE_LENGTH),
-    }))
-    .min(1)
-    .max(20),
-});
+const AskInput = z
+  .object({
+    language: LanguageSchema,
+    context: z.string().trim().max(1200).optional(),
+    messages: z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string().trim().min(1).max(MAX_CHAT_MESSAGE_LENGTH),
+        }),
+      )
+      .min(1)
+      .max(20),
+  })
+  .superRefine((value, ctx) => {
+    const total = value.messages.reduce((sum, message) => sum + message.content.length, 0);
+    if (total > 20_000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["messages"],
+        message: "Conversation is too long. Please start a new chat.",
+      });
+    }
+  });
 
 export const askAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
