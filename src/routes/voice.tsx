@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { askAssistant, speakText, transcribeAudio } from "@/lib/ai.functions";
 import { blobToBase64, playBase64Mp3, startRecording, type Recorder } from "@/lib/media";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/voice")({
   head: () => ({
@@ -27,6 +28,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 function VoicePage() {
   const { t, lang } = useI18n();
+  const { user } = useAuth();
   const ask = useServerFn(askAssistant);
   const speak = useServerFn(speakText);
   const transcribe = useServerFn(transcribeAudio);
@@ -38,6 +40,7 @@ function VoicePage() {
   const [messages, setMessages] = useState<Msg[]>([]);
 
   const sendQuestion = async (question: string, speakBack: boolean) => {
+    if (!user) { toast.error(t("loginNeeded")); return; }
     const next: Msg[] = [...messages, { role: "user", content: question }];
     setMessages(next);
     setThinking(true);
@@ -56,6 +59,7 @@ function VoicePage() {
   };
 
   const toggleRecording = async () => {
+    if (!user) { toast.error(t("loginNeeded")); return; }
     if (recording) {
       setRecording(false);
       const rec = recorder.current;
@@ -88,6 +92,7 @@ function VoicePage() {
   };
 
   const replay = async (content: string) => {
+    if (!user) { toast.error(t("loginNeeded")); return; }
     try {
       const { audioBase64 } = await speak({ data: { text: content, language: lang } });
       await playBase64Mp3(audioBase64);
