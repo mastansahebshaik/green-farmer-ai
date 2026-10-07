@@ -70,7 +70,10 @@ export async function startRecording(): Promise<Recorder> {
   const chunks: Float32Array[] = [];
   node.onaudioprocess = (e) => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
   source.connect(node);
-  node.connect(ctx.destination);
+  const silentSink = ctx.createGain();
+  silentSink.gain.value = 0;
+  node.connect(silentSink);
+  silentSink.connect(ctx.destination);
 
   return {
     stop: async () => {
