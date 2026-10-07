@@ -35,7 +35,7 @@ function HomePage() {
   const { t } = useI18n();
   const { user } = useAuth();
 
-  const { data: scans } = useQuery({
+  const { data: scans, error: scansError } = useQuery({
     queryKey: ["scans", user?.id, "recent"],
     enabled: Boolean(user),
     queryFn: async () => {
@@ -137,6 +137,12 @@ function HomePage() {
           <span className="block text-sm font-medium text-cream/80">{t("voiceSubtitle")}</span>
         </span>
       </Link>
+
+      {scansError ? (
+        <p className="mb-5 rounded-2xl bg-cream-2 p-4 text-[15px] font-medium text-clay ring-1 ring-clay/20">
+          Could not load your saved scans. Please try again.
+        </p>
+      ) : null}
 
       <section>
         <div className="mb-3 flex items-end justify-between gap-3">
