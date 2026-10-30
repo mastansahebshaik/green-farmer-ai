@@ -86,6 +86,27 @@ export type Database = {
         }
         Relationships: []
       }
+      request_rate_limits: {
+        Row: {
+          bucket: string
+          request_count: number
+          user_id: string
+          window_started_at: string
+        }
+        Insert: {
+          bucket: string
+          request_count?: number
+          user_id: string
+          window_started_at?: string
+        }
+        Update: {
+          bucket?: string
+          request_count?: number
+          user_id?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       scans: {
         Row: {
           created_at: string
@@ -154,6 +175,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_rate_limit: {
+        Args: { _bucket: string; _limit: number; _window_seconds: number }
+        Returns: boolean
+      }
+      get_admin_farmer_stats: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          language: string
+          last_sign_in_at: string
+          scan_count: number
+          village: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
