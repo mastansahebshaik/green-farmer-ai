@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -154,27 +154,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      consume_rate_limit: {
-        Args: {
-          _bucket: string
-          _limit: number
-          _window_seconds: number
-        }
-        Returns: boolean
-      }
-      get_admin_farmer_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          id: string
-          email: string | null
-          full_name: string | null
-          village: string | null
-          language: string
-          created_at: string | null
-          last_sign_in_at: string | null
-          scan_count: number
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
