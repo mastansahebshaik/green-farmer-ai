@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -86,6 +86,27 @@ export type Database = {
         }
         Relationships: []
       }
+      request_rate_limits: {
+        Row: {
+          bucket: string
+          request_count: number
+          user_id: string
+          window_started_at: string
+        }
+        Insert: {
+          bucket: string
+          request_count?: number
+          user_id: string
+          window_started_at?: string
+        }
+        Update: {
+          bucket?: string
+          request_count?: number
+          user_id?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       scans: {
         Row: {
           created_at: string
@@ -155,24 +176,20 @@ export type Database = {
     }
     Functions: {
       consume_rate_limit: {
-        Args: {
-          _bucket: string
-          _limit: number
-          _window_seconds: number
-        }
+        Args: { _bucket: string; _limit: number; _window_seconds: number }
         Returns: boolean
       }
       get_admin_farmer_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
+          created_at: string
+          email: string
+          full_name: string
           id: string
-          email: string | null
-          full_name: string | null
-          village: string | null
           language: string
-          created_at: string | null
-          last_sign_in_at: string | null
+          last_sign_in_at: string
           scan_count: number
+          village: string
         }[]
       }
       has_role: {
