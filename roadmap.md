@@ -13,3 +13,4 @@
 - [x] Fertiliser database: browse/search guide + admin add form
 - [x] Admin management: manage fertilisers (add, show/hide) from admin console
 - [x] Fertiliser guide linked from home and shops page; Hindi labels added
+- [x] Live-site fix: publish builds now include the public database settings (baked into vite.config.ts), app republished
