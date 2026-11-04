@@ -34,7 +34,21 @@ const QUICK_TIPS = [
 
 function HomePage() {
   const { t } = useI18n();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // The app always opens on the sign-in page for a signed-out visitor.
+  useEffect(() => {
+    if (!loading && !user) void navigate({ to: "/auth", replace: true });
+  }, [loading, user, navigate]);
+
+  if (!user) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-cream pt-[env(safe-area-inset-top)]">
+        <Loader2 className="size-8 animate-spin text-leaf-700" aria-label="Loading" />
+      </div>
+    );
+  }
 
   const { data: scans, error: scansError } = useQuery({
     queryKey: ["scans", user?.id, "recent"],
