@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ChevronRight, Leaf, MessageCircle, Mic, Sprout, Store } from "lucide-react";
+import { Camera, ChevronRight, Leaf, Loader2, MessageCircle, Mic, Sprout, Store } from "lucide-react";
+import { useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
