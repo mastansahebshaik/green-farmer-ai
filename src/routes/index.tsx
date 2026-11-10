@@ -42,14 +42,6 @@ function HomePage() {
     if (!loading && !user) void navigate({ to: "/auth", replace: true });
   }, [loading, user, navigate]);
 
-  if (!user) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-cream pt-[env(safe-area-inset-top)]">
-        <Loader2 className="size-8 animate-spin text-leaf-700" aria-label="Loading" />
-      </div>
-    );
-  }
-
   const { data: scans, error: scansError } = useQuery({
     queryKey: ["scans", user?.id, "recent"],
     enabled: Boolean(user),
@@ -63,6 +55,14 @@ function HomePage() {
       return data;
     },
   });
+
+  if (!user) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-cream pt-[env(safe-area-inset-top)]">
+        <Loader2 className="size-8 animate-spin text-leaf-700" aria-label="Loading" />
+      </div>
+    );
+  }
 
   const name = (user?.user_metadata?.["full_name"] as string | undefined) ?? "";
 
