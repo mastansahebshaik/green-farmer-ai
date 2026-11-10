@@ -14,3 +14,4 @@
 - [x] Admin management: manage fertilisers (add, show/hide) from admin console
 - [x] Fertiliser guide linked from home and shops page; Hindi labels added
 - [x] Live-site fix: publish builds now include the public database settings (baked into vite.config.ts), app republished
+- [x] GitHub Pages deployment forwards visitors to the working hosted app instead of publishing the repository source as a website

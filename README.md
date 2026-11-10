@@ -6,6 +6,9 @@ This project was built with [Lovable](https://lovable.dev).
 
 **Live app**: https://green-farmer-ai.lovable.app
 
+GitHub Pages is configured to forward visitors to the live app. The full app
+uses server-side features and cannot run as a standalone static GitHub Pages site.
+
 ## Build with Lovable
 
 Continue developing this project in the [Lovable editor](https://lovable.dev/projects/78571aa0-6198-43f4-babf-b4e3c90902cc).
